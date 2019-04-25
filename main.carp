@@ -1,0 +1,43 @@
+(load-and-use SDL)
+(load "Filepath.carp")
+(load "SDL_image.carp")
+(load "Vector.carp")
+
+(Project.config "title" "MoshPit")
+(Project.config "echo-compiler-cmd" false)
+(Project.config "output-directory" "./out")
+
+(deftype Art
+    [player (Ptr SDL_Texture)])
+
+(def art (Art.init NULL))
+
+(defn tick [state]
+  (+ state 10))
+
+(defn-do draw [app rend state]
+  (bg rend &(rgb 200 220 200))
+  (let [w 500
+        h 500]
+    (SDL.render-copy-ex rend
+                        @(Art.player &art)
+                        (address (SDL.rect 0 0 64 64))
+                        (address (SDL.rect (/ w 2) (/ h 2) 64 64))
+                        (Double.from-int @state)
+                        (address (SDL.point 32 32))
+                        SDL.flip-none))
+  )
+
+(defn load-img [rend img-dir name]
+  (let [p (IMG.load-texture rend (cstr &(str* img-dir name)))]
+    (if (null? p)
+      (System.exit 1)
+      p)))
+
+(defn main []
+  (let-do [app (SDLApp.create "MOSH PIT" 500 500)
+           rend @(SDLApp.renderer &app)
+           img-dir (str* &(Filepath.dir-from-path (System.get-arg 0)) "/img/")
+           state 0]
+    (set! art (Art.init (load-img rend img-dir "Soldier.png")))
+    (SDLApp.run-with-callbacks &app SDLApp.quit-on-esc tick draw state)))
